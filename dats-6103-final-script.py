@@ -4,6 +4,9 @@
 import pandas as pd
 import numpy as np
 import ast
+import matplotlib.pyplot as plt
+import seaborn as sns
+import folium
 
 from sklearn import linear_model
 from sklearn.tree import DecisionTreeRegressor
@@ -400,6 +403,116 @@ listings = df[['host_response_time', 'host_response_rate',
        'Technology', 'Views', 'Ward', 'Privacy', 'review_scores_rating']]
 
 # %%
+#Exploratory Data Analysis
+
+#barplot for hosts with more than 1 property
+
+
+host_property_count = data['host_id'].value_counts()
+host_property_count_df = pd.DataFrame({'host_id': host_property_count.index, 'property_count': host_property_count.values})
+host_property_count_df = host_property_count_df.sort_values(by='property_count', ascending=False)
+
+#range and rnage labels
+ranges = [1,2,5,10,15,20,25,50,100,200,float('inf')] 
+range_labels = [' Upto 2 Properties',' Upto 5 Properties',' Upto 10 Properties',' Upto 15 Properties', 'Upto 20 Properties', 'Upto 25 Properties','Upto 50 Properties', 'Upto 100 Properties', 'Upto 200 Properties', 'More than 200 Properties']
+host_property_count_df['property_count_range'] = pd.cut(host_property_count_df['property_count'], bins=ranges, labels=range_labels, right=False)
+# Group the data by property count range and count the number of hosts in each range
+grouped_counts = host_property_count_df.groupby('property_count_range')['host_id'].count()
+
+
+plt.figure(figsize=(10, 6))
+grouped_counts.plot(kind='bar')
+plt.xlabel('Host Groups')
+plt.ylabel('Number of Properties')
+plt.title('Number of Properties Listed by Host')
+plt.xticks(rotation=40)  # To avoid overlap of host IDs on x-axis
+plt.tight_layout()
+#plt.ylim(top = 100)
+plt.show()
+
+
+plt.figure(figsize=(10, 6))
+grouped_counts.plot(kind='bar')
+plt.xlabel('Host Groups')
+plt.ylabel('Number of Properties')
+plt.title('Number of Properties Listed by Host')
+plt.xticks(rotation=40)  # To avoid overlap of host IDs on x-axis
+plt.tight_layout()
+plt.ylim(top = 100)
+plt.show()
+
+
+
+base_keywords=['Camper/RV','Casa Particular', 'Entire','Floor','Room','Shared room','Private room','Tiny home','Tower']
+
+keyword_counts = {keyword: 0 for keyword in base_keywords}
+
+for keyword in base_keywords:
+    propcount = data[data['property_type'].str.contains(keyword,case=False,na=False)].shape[0]
+    keyword_counts[keyword] = propcount
+
+plt.figure(figsize=(10, 6))
+plt.bar(keyword_counts.keys(),keyword_counts.values())
+plt.xlabel('Property Type')
+plt.ylabel('Count of Properties')
+plt.title('Count of Properties by Keyword')
+plt.xticks(rotation=40)  # To avoid overlap of host IDs on x-axis
+plt.tight_layout()
+plt.show()
+
+
+plt.figure(figsize=(16,8))
+ax= plt.axes()
+correlation_mat = listings.corr()
+sns.heatmap(correlation_mat,annot=True,cmap='coolwarm',ax=ax, fmt = '0.2f', annot_kws = {'size' : 10},vmin=-1,center=0,vmax=1)
+plt.title('Correlation Matrix', fontsize = 16)
+ax.set_xticklabels(ax.get_xticklabels(), rotation = 45, horizontalalignment = 'right')
+cbar = ax.collections[0].colorbar
+# cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
+# cbar.set_ticklabels(['-1', '-0.5', '0', '0.5', '1'])
+plt.tight_layout()
+plt.show()
+
+
+
+
+# integer_cols = data.select_dtypes(include = ['int64'])
+# (integer_cols.head())
+# intcols = integer_cols.columns
+# intcols21 = intcols.drop(["Reached.on.Time_Y.N"])
+# plt.figure(figsize = (16, 20))
+# sns.set_theme(style="ticks", palette="pastel")
+# nplot = 1
+# for i in range(len(intcols21)):
+#     if nplot <= len(intcols21):
+#         ax = plt.subplot(4, 2, nplot)
+#         sns.boxplot(x = intcols21[i], data = data, ax = ax)
+#         plt.title("Boxplots for On-time delivery by "f"{intcols21[i]}" , fontsize = 13)
+#         nplot += 1
+# plt.show()
+
+
+plt.figure(figsize=(16, 8))
+sns.scatterplot(x='latitude', y='longitude', hue='Ward', data=df, palette='Set1', alpha=0.7)
+plt.title('Airbnb Listings: Latitude vs Longitude with Region Hue')
+plt.xlabel('Latitude')
+plt.ylabel('Longitude')
+plt.legend(title='Ward Numbers')
+plt.grid(True)
+plt.show()
+
+
+plt.figure(figsize=(16, 8))
+sns.scatterplot(x='latitude', y='longitude', hue='host_identity_verified', data=data, palette='Set1', alpha=0.7)
+plt.title('Latitude vs Longitude of an AirBnB with Host Identity')
+plt.xlabel('Latitude')
+plt.ylabel('Longitude')
+plt.legend(title='Verified Identity(True/False)')
+plt.grid(True)
+plt.show()
+
+
+# %%
 ##### Initiate Train-Test Split #####
 
 x = listings.drop(columns=['review_scores_rating'])
@@ -436,19 +549,7 @@ print(cv_results_lr) # [0.08999757 0.08584486 0.05371462 0.12635787 0.04745443]
 
 print(np.mean(cv_results_lr)) # 0.080673870945533
 
-# %%
-##### Decision Tree Regressor Modeling #####
-dt = DecisionTreeRegressor(random_state=1)
-dt.fit(x_train,y_train)
-dt_pred = dt.predict(x_test)
-
-print('score (train):', dt.score(x_train, y_train)) # 0.9653229399087856
-print('score (test):', dt.score(x_test, y_test)) # -0.8345672985251147
-print('mse:', mse(y_test, dt_pred)) #  0.513539408944659
+    
 
 #%%
-##### Decision Tree Regressor CV Results #####
-cv_results_dt = cross_val_score(dt, x, y, cv=5)
-print(cv_results_dt) # [-0.92721364 -1.22195844 -0.72879348 -1.79986417 -0.63914994]
-
-print(np.mean(cv_results_dt)) # -1.0633959343345878
+##### Random Forest Modeling #####
