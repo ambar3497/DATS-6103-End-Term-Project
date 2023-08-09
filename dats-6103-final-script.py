@@ -5,16 +5,19 @@ import pandas as pd
 import numpy as np
 import ast
 
-from sklearn.preprocessing import train_test_split
 from sklearn import linear_model
+from sklearn.tree import DecisionTreeRegressor
 
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error as mse
 
+import matplotlib.pyplot as plt
 
-data = pd.read_csv('DC-AirBnB-Listings.csv')
+#%%
+data = pd.read_csv(r'~/Anaconda/DC-AirBnB-Listings.csv')
 print(data.columns)
 print(f'The file has {data.shape[0]} rows and {data.shape[1]} features.')
 print(data.dtypes)
@@ -145,57 +148,59 @@ am_parking = []
 am_gym = []
 
 for idx in df.index:
-    if any(x.lower() in streaming for x in df['amenities'][idx]):
+    checker = [x.lower() for x in df['amenities'][idx]]
+
+    if any(x in el for x in streaming for el in checker):
         am_streaming.append(1)
     else:
         am_streaming.append(0)
         
-    if any(x.lower() in outdoor for x in df['amenities'][idx]):
+    if any(x in el for x in outdoor for el in checker):
         am_outdoor.append(1)
     else:
         am_outdoor.append(0)
         
-    if any(x.lower() in view for x in df['amenities'][idx]):
+    if any(x in el for x in view for el in checker):
         am_view.append(1)
     else:
         am_view.append(0)
         
-    if any(x.lower() in entertainment for x in df['amenities'][idx]):
+    if any(x in el for x in entertainment for el in checker):
         am_entertainment.append(1)
     else:
         am_entertainment.append(0)
         
-    if any(x.lower() in kitchen_appl for x in df['amenities'][idx]):
+    if any(x in el for x in kitchen_appl for el in checker):
         am_kitchenappl.append(1)
     else:
         am_kitchenappl.append(0)
         
-    if any(x.lower() in other_appl for x in df['amenities'][idx]):
+    if any(x in el for x in other_appl for el in checker):
         am_otherappl.append(1)
     else:
         am_otherappl.append(0)
         
-    if any(x.lower() in tech for x in df['amenities'][idx]):
+    if any(x in el for x in tech for el in checker):
         am_tech.append(1)
     else:
         am_tech.append(0)
     
-    if any(x.lower() in luxury for x in df['amenities'][idx]):
+    if any(x in el for x in luxury for el in checker):
         am_luxury.append(1)
     else:
         am_luxury.append(0)
         
-    if any(x.lower() in security for x in df['amenities'][idx]):
+    if any(x in el for x in security for el in checker):
         am_security.append(1)
     else:
         am_security.append(0)
         
-    if any(x.lower() in parking for x in df['amenities'][idx]):
+    if any(x in el for x in parking for el in checker):
         am_parking.append(1)
     else:
         am_parking.append(0)
         
-    if any(x.lower() in gym for x in df['amenities'][idx]):
+    if any(x in el for x in gym for el in checker):
         am_gym.append(1)
     else:
         am_gym.append(0)
@@ -212,6 +217,48 @@ df['Security'] = am_security
 df['Streaming'] = am_streaming
 df['Technology'] = am_tech
 df['Views'] = am_view
+
+#%%
+##### Generate Plots to Show Distribution of Amenities Variables #####
+
+fig, axes = plt.subplots(6, 2, figsize=(8,14))
+fig.suptitle('Distribution of Engineered Amenities Variables', y=0.93)
+
+plt.subplots_adjust(hspace=0.5, wspace=0.4)
+
+axes[0,0].bar(df.groupby(by='Clothing', as_index=False)['price'].count()['Clothing'], df.groupby(by='Clothing', as_index=False)['price'].count()['price'])
+axes[0,0].set_title('Clothing Variable')
+
+axes[0,1].bar(df.groupby(by='Entertainment', as_index=False)['price'].count()['Entertainment'], df.groupby(by='Entertainment', as_index=False)['price'].count()['price'])
+axes[0,1].set_title('Entertainment Variable')
+
+axes[1,0].bar(df.groupby(by='Exercise', as_index=False)['price'].count()['Exercise'], df.groupby(by='Exercise', as_index=False)['price'].count()['price'])
+axes[1,0].set_title('Exercise Variable')
+
+axes[1,1].bar(df.groupby(by='Kitchen', as_index=False)['price'].count()['Kitchen'], df.groupby(by='Kitchen', as_index=False)['price'].count()['price'])
+axes[1,1].set_title('Kitchen Variable')
+
+axes[2,0].bar(df.groupby(by='Luxury', as_index=False)['price'].count()['Luxury'], df.groupby(by='Luxury', as_index=False)['price'].count()['price'])
+axes[2,0].set_title('Luxury Variable')
+
+axes[2,1].bar(df.groupby(by='Outdoor', as_index=False)['price'].count()['Outdoor'], df.groupby(by='Outdoor', as_index=False)['price'].count()['price'])
+axes[2,1].set_title('Outdoor Variable')
+
+axes[3,0].bar(df.groupby(by='Parking', as_index=False)['price'].count()['Parking'], df.groupby(by='Parking', as_index=False)['price'].count()['price'])
+axes[3,0].set_title('Parking Variable')
+
+axes[3,1].bar(df.groupby(by='Security', as_index=False)['price'].count()['Security'], df.groupby(by='Security', as_index=False)['price'].count()['price'])
+axes[3,1].set_title('Security Variable')
+
+axes[4,0].bar(df.groupby(by='Streaming', as_index=False)['price'].count()['Streaming'], df.groupby(by='Streaming', as_index=False)['price'].count()['price'])
+axes[4,0].set_title('Streaming Variable')
+
+axes[4,1].bar(df.groupby(by='Technology', as_index=False)['price'].count()['Technology'], df.groupby(by='Technology', as_index=False)['price'].count()['price'])
+axes[4,1].set_title('Technology Variable')
+
+axes[5,0].bar(df.groupby(by='Views', as_index=False)['price'].count()['Views'], df.groupby(by='Views', as_index=False)['price'].count()['price'])
+axes[5,0].set_title('Views Variable')
+
 
 #%% 
 ##### Part 1: Feature Engineering for Neighbourhood Variable #####
@@ -314,6 +361,14 @@ for idx in df.index:
             
 df['Ward'] = ward
 
+#%%
+##### Generate Plot to Show Distribution of Neighborhoods Variables #####
+
+plt.bar(df.groupby(by='Ward', as_index=False)['price'].count()['Ward'],df.groupby(by='Ward', as_index=False)['price'].count()['price'])
+plt.title('Distribution of Engineered Neighborhood Variable')
+plt.xlabel('Ward')
+plt.ylabel('Count of Listings')
+
 #%% 
 ##### Convert Room Type to Ordinal Variable #####
 
@@ -344,7 +399,6 @@ listings = df[['host_response_time', 'host_response_rate',
        'Kitchen', 'Luxury', 'Outdoor', 'Parking', 'Security', 'Streaming',
        'Technology', 'Views', 'Ward', 'Privacy', 'review_scores_rating']]
 
-
 # %%
 ##### Initiate Train-Test Split #####
 
@@ -362,23 +416,39 @@ lr_pred = lr.predict(x_test)
 
 #%% 
 ##### Linear Regression Results #####
-print('score (train):', lr.score(x_train, y_train)) # 0.0835532784078995
-print('score (test):', lr.score(x_test, y_test)) # 0.12175543947119793
-print('mse:', mse(y_test, lr_pred)) # 0.24584172675780883
+print('score (train):', lr.score(x_train, y_train)) # 0.09114998482404135
+print('score (test):', lr.score(x_test, y_test)) # 0.1162324514551959
+print('mse:', mse(y_test, lr_pred)) # 0.24738774363253802
 
-print('intercept:', lr.intercept_) # 3.919799651977036
-print('coef_:', lr.coef_) # [ 4.29923032e-02  2.35545739e-01 -6.32980452e-02  2.17586260e-01
-#   1.59195796e-04 -2.76771664e-03 -9.66933705e-03 -3.79698134e-02
-#   4.33482003e-05  6.72377841e-02  4.78343459e-02 -1.03648606e-01
-#   1.02855952e-01  1.79136995e-02  2.12274558e-02  2.49800181e-16
-#   4.36731008e-01  4.16333634e-16 -4.97402521e-02  1.10230032e-02
-#   5.46813418e-04 -5.60328683e-02]
+print('intercept:', lr.intercept_) # 3.855591141659322
+print('coef_:', lr.coef_) #  [ 3.99668666e-02  2.12411527e-01 -7.54931302e-02  1.98270851e-01
+#  -5.71772736e-04 -3.07778830e-03 -1.02980734e-02 -3.97807499e-02
+#   4.45516380e-05  8.66330386e-02  2.26644948e-02 -8.82924725e-02
+#   1.13364695e-01  1.69814513e-02  1.93109785e-02  2.20418371e-02
+#   4.92525354e-01  2.01159971e-02  5.53017450e-02 -1.25762403e-02
+#  -1.77825096e-03 -4.51056614e-02]
 
 # %%
 ##### Linear Regression Cross Validation Results #####
 full_cv = linear_model.LinearRegression()
-cv_results = cross_val_score(full_cv, x, y, cv=5)
-print(cv_results) # [0.09065362 0.08378242 0.04216293 0.11741252 0.04957127]
+cv_results_lr = cross_val_score(full_cv, x, y, cv=5)
+print(cv_results_lr) # [0.08999757 0.08584486 0.05371462 0.12635787 0.04745443]
 
-print(np.mean(cv_results)) # 0.07671655242104507
+print(np.mean(cv_results_lr)) # 0.080673870945533
+
 # %%
+##### Decision Tree Regressor Modeling #####
+dt = DecisionTreeRegressor(random_state=1)
+dt.fit(x_train,y_train)
+dt_pred = dt.predict(x_test)
+
+print('score (train):', dt.score(x_train, y_train)) # 0.9653229399087856
+print('score (test):', dt.score(x_test, y_test)) # -0.8345672985251147
+print('mse:', mse(y_test, dt_pred)) #  0.513539408944659
+
+#%%
+##### Decision Tree Regressor CV Results #####
+cv_results_dt = cross_val_score(dt, x, y, cv=5)
+print(cv_results_dt) # [-0.92721364 -1.22195844 -0.72879348 -1.79986417 -0.63914994]
+
+print(np.mean(cv_results_dt)) # -1.0633959343345878
