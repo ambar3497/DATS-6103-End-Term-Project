@@ -452,3 +452,160 @@ cv_results_dt = cross_val_score(dt, x, y, cv=5)
 print(cv_results_dt) # [-0.92721364 -1.22195844 -0.72879348 -1.79986417 -0.63914994]
 
 print(np.mean(cv_results_dt)) # -1.0633959343345878
+
+# %%
+from sklearn.ensemble import RandomForestRegressor
+
+rf = RandomForestRegressor(random_state=1)
+rf.fit(x_train,y_train)
+rf_pred = rf.predict(x_test)
+
+
+# %%
+print('score (train):', rf.score(x_train, y_train)) # 0.8314247568648949
+print('score (test):',rf.score(x_test, y_test)) # -0.04416340259503593
+print('mse:', mse(y_test, rf_pred)) #  0.29228639202355106
+# %%
+cv_results_rf = cross_val_score(rf, x, y, cv=5)
+print(cv_results_rf) # [ 0.03176292 -0.01200502 -0.03612608  0.00168267  0.01415071]
+
+print(np.mean(cv_results_rf)) # -0.0001069597796147681
+# %%
+plt.scatter(df['Ward'],df['price'])
+# %%
+##### Create the New Discretized Review Scores Variable #####
+review_mean = listings['review_scores_rating'].mean()
+target = []
+
+for rating in listings['review_scores_rating']:
+    if rating >= review_mean:
+        target.append(1)
+    else:
+        target.append(0)
+
+listings['Target'] = target
+
+#%%
+##### Plot the New Discretized Review Scores Variable #####
+fig, ax = plt.subplots()
+bars = ax.bar(listings.groupby(by=['Target'], as_index=False)['review_scores_rating'].count()['Target'], listings.groupby(by=['Target'], as_index=False)['review_scores_rating'].count()['review_scores_rating'])
+
+plt.title('Distribution of Discretized Review Score Variable')
+plt.xlabel('Rating Above Average: 1 - Yes, 0 - No')
+plt.ylabel('Count of Reviews')
+
+ax.bar_label(bars)
+# %%
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.svm import LinearSVC
+from sklearn.svm import NuSVC
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import NearestCentroid
+from sklearn.naive_bayes import GaussianNB
+import xgboost as xgb
+from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix
+
+#%%
+x = listings.drop(columns=['review_scores_rating', 'Target'])
+y = listings['Target']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
+#%%
+models = {'Decision Tree':DecisionTreeClassifier(random_state=1), 'Naive Bayes':GaussianNB(), 
+          'Support Vector':SVC(), 'Linear SVC':LinearSVC(), 'Nu-Support Vector':NuSVC(), 
+          'KNN':KNeighborsClassifier(), 'Nearest Centroid':NearestCentroid(), 
+          'Gradient Booster':GradientBoostingClassifier(), 
+          'AdaBoost':AdaBoostClassifier(), 'XGBoost':xgb.XGBClassifier()}
+
+for name, model in models.items():
+    
+        model.fit(x_train, y_train)
+        y_pred = model.predict(x_test)
+        
+        cf_matrix = confusion_matrix(y_test, y_pred)
+        matrix_plot = ConfusionMatrixDisplay(cf_matrix)
+        matrix_plot.plot()
+        plt.suptitle(f'Confusion Matrix for {name}',y=1.05)
+        plt.title('Class 0: Below Average \n Class 1: Above Average')
+# %%
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import make_scorer
+
+dt = DecisionTreeClassifier(random_state=1)
+nb = GaussianNB()
+
+# %%
+def specificity1(y_test,y_pred):
+    """The following function creates a scorer for the Specificity (True Negative) value. 
+    The Specificity value is a measure of our model correctly identifying True Negatives, 
+    and summarizes how well the negative class was predicted.""" 
+    
+    tn, fp, fn, tp = confusion_matrix(y_test,y_pred).ravel()
+    
+    if (tn+fp) == 0 or tn == 0:
+        true_negative_rate = 0
+    else:
+        true_negative_rate = tn/(tn+fp)
+    
+    return true_negative_rate
+
+def neg_predictive_value1(y_test,y_pred):
+    """The following function creates a scorer for the Negative Predictive value. 
+    The negative predictive value is a measure of how well a model makes negative predicictions. 
+    When our model predicts that a student will not be retained, 
+    the negative predictive value provides the percentage of time our model makes a correct prediction.""" 
+
+    tn, fp, fn, tp = confusion_matrix(y_test,y_pred).ravel()
+    
+    if (tn+fn) == 0 or tn == 0:
+        neg_predictive_val = 0
+    else:
+        neg_predictive_val = tn/(tn+fn)
+    
+    return neg_predictive_val
+
+#%%
+def cross_validation_scores(model, cv_method, metrics, xm, ym):
+    from sklearn.model_selection import cross_validate
+    x_train, x_test, y_train, y_test = train_test_split(xm, ym, test_size=0.2, random_state=1)
+    model.fit(x_train, y_train)
+    cv_results = cross_validate(model, x_test, y_test, scoring=metrics, cv=cv_method)
+    
+    calculated_metrics = {}
+    for name in metrics.keys():
+        calculated_metrics[name] = cv_results[f'test_{name}']
+    
+    names = []
+    mins = []
+    means = []
+    meds = []
+    maxes = []
+    stdvs = []
+
+    for key, value in calculated_metrics.items():
+        names.append(key)
+        mins.append(value.min())
+        means.append(value.mean())
+        meds.append(np.median(value))
+        maxes.append(value.max())
+        stdvs.append(value.std())
+        
+    cv_df = pd.DataFrame({'Metric':names, 'Min':mins, 'Mean':means, 'Median':meds, 'Max':maxes, 'Stdv':stdvs})
+    return cv_df
+
+#%%
+
+metrics = {'balanced_accuracy':make_scorer(balanced_accuracy_score), 'f1_score':make_scorer(f1_score), 'precision':make_scorer(precision_score), 'recall':make_scorer(recall_score), 'npv':make_scorer(neg_predictive_value1), 'tnr':make_scorer(specificity1)}
+
+dt_results = cross_validation_scores(model=dt, cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+dt_results
+
+# %%
+
+nb_results = cross_validation_scores(model=nb, cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nb_results
