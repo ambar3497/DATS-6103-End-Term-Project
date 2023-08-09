@@ -5,6 +5,15 @@ import pandas as pd
 import numpy as np
 import ast
 
+from sklearn.preprocessing import train_test_split
+from sklearn import linear_model
+
+from sklearn.model_selection import cross_val_score
+
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error as mse
+
+
 data = pd.read_csv('DC-AirBnB-Listings.csv')
 print(data.columns)
 print(f'The file has {data.shape[0]} rows and {data.shape[1]} features.')
@@ -336,4 +345,40 @@ listings = df[['host_response_time', 'host_response_rate',
        'Technology', 'Views', 'Ward', 'Privacy', 'review_scores_rating']]
 
 
+# %%
+##### Initiate Train-Test Split #####
+
+x = listings.drop(columns=['review_scores_rating'])
+y = listings['review_scores_rating']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state=1)
+
+#%%
+##### Linear Regression Modeling #####
+lr = linear_model.LinearRegression()
+lr.fit(x_train,y_train)
+
+lr_pred = lr.predict(x_test)
+
+#%% 
+##### Linear Regression Results #####
+print('score (train):', lr.score(x_train, y_train)) # 0.0835532784078995
+print('score (test):', lr.score(x_test, y_test)) # 0.12175543947119793
+print('mse:', mse(y_test, lr_pred)) # 0.24584172675780883
+
+print('intercept:', lr.intercept_) # 3.919799651977036
+print('coef_:', lr.coef_) # [ 4.29923032e-02  2.35545739e-01 -6.32980452e-02  2.17586260e-01
+#   1.59195796e-04 -2.76771664e-03 -9.66933705e-03 -3.79698134e-02
+#   4.33482003e-05  6.72377841e-02  4.78343459e-02 -1.03648606e-01
+#   1.02855952e-01  1.79136995e-02  2.12274558e-02  2.49800181e-16
+#   4.36731008e-01  4.16333634e-16 -4.97402521e-02  1.10230032e-02
+#   5.46813418e-04 -5.60328683e-02]
+
+# %%
+##### Linear Regression Cross Validation Results #####
+full_cv = linear_model.LinearRegression()
+cv_results = cross_val_score(full_cv, x, y, cv=5)
+print(cv_results) # [0.09065362 0.08378242 0.04216293 0.11741252 0.04957127]
+
+print(np.mean(cv_results)) # 0.07671655242104507
 # %%
