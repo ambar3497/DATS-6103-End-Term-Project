@@ -17,7 +17,7 @@ from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
 
 #%%
-data = pd.read_csv(r'~/Anaconda/DC-AirBnB-Listings.csv')
+data = pd.read_csv('DC-AirBnB-Listings.csv')
 print(data.columns)
 print(f'The file has {data.shape[0]} rows and {data.shape[1]} features.')
 print(data.dtypes)
