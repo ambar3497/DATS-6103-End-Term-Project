@@ -684,12 +684,13 @@ for name, model in models.items():
     
         model.fit(x_train, y_train)
         y_pred = model.predict(x_test)
-        
+        vif = 1 / (1 - (r2_score(y_test, model.predict(x_test))))
         cf_matrix = confusion_matrix(y_test, y_pred)
         matrix_plot = ConfusionMatrixDisplay(cf_matrix)
         matrix_plot.plot()
         plt.suptitle(f'Confusion Matrix for {name}',y=1.05)
         plt.title('Class 0: Below Average \n Class 1: Above Average')
+        print(f'VIF score for {name} is {vif}')
         # feature_importances = pd.DataFrame(model.feature_importances_, columns=['important_features'])
         # feature_importances.index = x.columns
         # plt.figure(figsize=(10, 6))
