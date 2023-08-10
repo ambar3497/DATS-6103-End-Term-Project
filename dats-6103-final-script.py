@@ -592,6 +592,75 @@ plt.tight_layout()
 plt.show()
 
 
+#%%
+# Henry's EDA using df dataframe
+# Boxplots
+print('df data frame:')
+print(df.info())
+
+print('listings  data frame:')
+print(listings.info())
+
+# host behavior rates boxplots
+host_rates = ['host_response_rate', 'host_acceptance_rate']
+host_rate_labels = ['Response', 'Acceptance']
+
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[host_rates])
+plt.xticks(rotation=0) 
+plt.title("Distributions of Host Behavior Rates")
+plt.xlabel('Type of Rate')
+plt.ylabel('Rate')
+
+ax.set_xticklabels(host_rate_labels)
+
+plt.tight_layout()
+plt.show()
+
+
+# price boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
+ax.set_yticklabels([])
+plt.title("Distribution of Rental Prices")
+plt.xlabel('Price ($)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+
+
+# review score boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
+ax.set_yticklabels([])
+plt.title("Distribution of Review Scores")
+plt.xlabel('Review Scores (Out of 5)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+
+
+# barplot of mean price per ward
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
+plt.title("Mean Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Mean Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+
+# barplot of median price per ward
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
+plt.title("Median Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Median Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+
+
 # %%
 ##### Initiate Train-Test Split #####
 
