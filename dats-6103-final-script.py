@@ -18,6 +18,7 @@ from sklearn.metrics import (
     recall_score,
     classification_report
 )
+from sklearn.linear_model import LogisticRegression 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
@@ -441,7 +442,7 @@ host_property_count = data['host_id'].value_counts()
 host_property_count_df = pd.DataFrame({'host_id': host_property_count.index, 'property_count': host_property_count.values})
 host_property_count_df = host_property_count_df.sort_values(by='property_count', ascending=False)
 
-#range and rnage labels
+#range and range labels
 ranges = [1,2,5,10,15,20,25,50,100,200,float('inf')] 
 range_labels = [' Upto 2 Properties',' Upto 5 Properties',' Upto 10 Properties',' Upto 15 Properties', 'Upto 20 Properties', 'Upto 25 Properties','Upto 50 Properties', 'Upto 100 Properties', 'Upto 200 Properties', 'More than 200 Properties']
 host_property_count_df['property_count_range'] = pd.cut(host_property_count_df['property_count'], bins=ranges, labels=range_labels, right=False)
@@ -600,13 +601,15 @@ y = listings['Target']
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state=42)
 
 #%%
-models = {'Decision Tree':DecisionTreeClassifier(random_state=1), 'Naive Bayes':GaussianNB(),
+models = {'Logistic Regression':LogisticRegression(),'Decision Tree':DecisionTreeClassifier(random_state=1), 'Naive Bayes':GaussianNB(),
           'Support Vector':SVC(kernel='rbf'), 'Linear SVC':LinearSVC(), 'Nu-Support Vector':NuSVC(), 
           'KNN':KNeighborsClassifier(), 'Nearest Centroid':NearestCentroid(), 
           'Gradient Booster':GradientBoostingClassifier(), 
           'AdaBoost':AdaBoostClassifier(), 'XGBoost':xgb.XGBClassifier(),
           'Random Forest': RandomForestClassifier(n_estimators = 500)
           }
+
+#models = {'Gradient Booster':GradientBoostingClassifier()}
 
 for name, model in models.items():
     
@@ -688,6 +691,7 @@ def cross_validation_scores(model, cv_method, metrics, xm, ym):
 
 metrics = {'balanced_accuracy':make_scorer(balanced_accuracy_score), 'f1_score':make_scorer(f1_score), 'precision':make_scorer(precision_score), 'recall':make_scorer(recall_score), 'npv':make_scorer(neg_predictive_value1), 'tnr':make_scorer(specificity1)}
 
+lgr_results = cross_validation_scores(model=models['Logistic Regression'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y) 
 dt_results = cross_validation_scores(model=models['Decision Tree'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
 rf_results = cross_validation_scores(model=models['Random Forest'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
 svc_results = cross_validation_scores(model=models['Support Vector'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
@@ -700,6 +704,18 @@ gbc_results = cross_validation_scores(model=models['Gradient Booster'], cv_metho
 ada_results = cross_validation_scores(model=models['AdaBoost'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
 xgb_results = cross_validation_scores(model=models['XGBoost'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
 
+print(f'Logistic regession accuracy metrics\n{lgr_results}\n')
+print(f'Decision Tree accuracy metrics\n{dt_results}\n')
+print(f'Random Forest Classifier accuracy metrics\n{rf_results}\n')
+print(f'Support Vector Classifier accuracy metrics\n{svc_results}\n')
+print(f'Naive Bayes Classifier accuracy metrics\n{nb_results}\n')
+print(f'Linear SVC Classifier accuracy metrics\n{linsvc_results}\n')
+print(f'Nu Support Classifier accuracy metrics \n{nusupp_results}\n')
+print(f'K Nearest Neighbours accuracy metrics\n{knn_results}\n')
+print(f'Nearest Centroid accuracy metrics\n{nrcctd_results}\n')
+print(f'Gradient Boosting Classifier accuracy metrics\n{gbc_results}\n')
+print(f'ADA Classifier accuracy metrics\n{ada_results}\n')
+print(f'XG Boost accuracy metrics\n{xgb_results}\n')
 
 # %%
 #FEATURE IMPORTANCE FOR BEST MODEL
