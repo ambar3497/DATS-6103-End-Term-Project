@@ -789,14 +789,15 @@ print(f'XG Boost accuracy metrics\n{xgb_results}\n')
 # %%
 #FEATURE IMPORTANCE FOR BEST MODEL
 
-feat_imp = permutation_importance(models['Gradient Booster'], x, y)
+feat_imp = permutation_importance(models['Gradient Booster'], x_train, y_train)
 
 # Create a DataFrame with the feature importances
 dfimp = pd.DataFrame(feat_imp.importances_mean, columns=['important_features'])
-dfimp.index = x.columns
+dfimp.index = x_train.columns
+dfimp = dfimp.sort_values('important_features',ascending = False)
 
 # Plot the feature importances
-plt.figure(figsize=(16, 8))
+plt.figure(figsize=(12, 8))
 sns.barplot(data=dfimp, x='important_features', y=dfimp.index)
 plt.title('Feature Importance')
 plt.xlabel('Relative Importance')
