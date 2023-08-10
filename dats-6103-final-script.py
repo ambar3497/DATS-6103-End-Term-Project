@@ -6,19 +6,35 @@ import numpy as np
 import ast
 import matplotlib.pyplot as plt
 import seaborn as sns
-import folium
-
-from sklearn import linear_model
-from sklearn.tree import DecisionTreeRegressor
-
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
-
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error as mse
-
-import matplotlib.pyplot as plt
-
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    classification_report
+)
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.svm import LinearSVC
+from sklearn.svm import NuSVC
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import NearestCentroid
+from sklearn.naive_bayes import GaussianNB
+import xgboost as xgb
+from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import StratifiedKFold
+from sklearn.inspection import permutation_importance
 #%%
 data = pd.read_csv('DC-AirBnB-Listings.csv')
 print(data.columns)
@@ -392,6 +408,7 @@ for price in df['price']:
         
 df['price'] = prices
 
+
 #%%
 ##### Finalizing DataFrames #####
 # The df dataframe can be used for EDA
@@ -401,6 +418,18 @@ listings = df[['host_response_time', 'host_response_rate',
        'host_acceptance_rate', 'host_is_superhost', 'accommodates', 'bedrooms', 'beds', 'instant_bookable', 'price', 'Clothing', 'Entertainment', 'Exercise',
        'Kitchen', 'Luxury', 'Outdoor', 'Parking', 'Security', 'Streaming',
        'Technology', 'Views', 'Ward', 'Privacy', 'review_scores_rating']]
+
+review_mean = listings['review_scores_rating'].mean()
+target = []
+
+for rating in listings['review_scores_rating']:
+    if rating >= review_mean:
+        target.append(1)
+    else:
+        target.append(0)
+
+listings['Target'] = target
+
 
 # %%
 #Exploratory Data Analysis
@@ -441,8 +470,6 @@ plt.tight_layout()
 plt.ylim(top = 100)
 plt.show()
 
-
-
 base_keywords=['Camper/RV','Casa Particular', 'Entire','Floor','Room','Shared room','Private room','Tiny home','Tower']
 
 keyword_counts = {keyword: 0 for keyword in base_keywords}
@@ -474,27 +501,9 @@ plt.tight_layout()
 plt.show()
 
 
-
-
-# integer_cols = data.select_dtypes(include = ['int64'])
-# (integer_cols.head())
-# intcols = integer_cols.columns
-# intcols21 = intcols.drop(["Reached.on.Time_Y.N"])
-# plt.figure(figsize = (16, 20))
-# sns.set_theme(style="ticks", palette="pastel")
-# nplot = 1
-# for i in range(len(intcols21)):
-#     if nplot <= len(intcols21):
-#         ax = plt.subplot(4, 2, nplot)
-#         sns.boxplot(x = intcols21[i], data = data, ax = ax)
-#         plt.title("Boxplots for On-time delivery by "f"{intcols21[i]}" , fontsize = 13)
-#         nplot += 1
-# plt.show()
-
-
 plt.figure(figsize=(16, 8))
 sns.scatterplot(x='latitude', y='longitude', hue='Ward', data=df, palette='Set1', alpha=0.7)
-plt.title('Airbnb Listings: Latitude vs Longitude with Region Hue')
+plt.title('Airbnb Listings: Latitude vs Longitude with Region')
 plt.xlabel('Latitude')
 plt.ylabel('Longitude')
 plt.legend(title='Ward Numbers')
@@ -503,7 +512,7 @@ plt.show()
 
 
 plt.figure(figsize=(16, 8))
-sns.scatterplot(x='latitude', y='longitude', hue='host_identity_verified', data=data, palette='Set1', alpha=0.7)
+sns.scatterplot(x='latitude', y='longitude', hue='host_identity_verified', data=data, palette='Set2', alpha=0.7)
 plt.title('Latitude vs Longitude of an AirBnB with Host Identity')
 plt.xlabel('Latitude')
 plt.ylabel('Longitude')
@@ -511,45 +520,202 @@ plt.legend(title='Verified Identity(True/False)')
 plt.grid(True)
 plt.show()
 
+##### Plot the New Discretized Review Scores Variable #####
+fig, ax = plt.subplots()
+bars = ax.bar(listings.groupby(by=['Target'], as_index=False)['review_scores_rating'].count()['Target'], listings.groupby(by=['Target'], as_index=False)['review_scores_rating'].count()['review_scores_rating'])
+
+plt.title('Distribution of Discretized Review Score Variable')
+plt.xlabel('Rating Above Average: 1 - Yes, 0 - No')
+plt.ylabel('Count of Reviews')
+
+ax.bar_label(bars)
+
+
+# host behavior rates boxplots
+host_rates = ['host_response_rate', 'host_acceptance_rate']
+host_rate_labels = ['Response', 'Acceptance']
+
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[host_rates])
+plt.xticks(rotation=0) 
+plt.title("Distributions of Host Behavior Rates")
+plt.xlabel('Type of Rate')
+plt.ylabel('Rate')
+
+ax.set_xticklabels(host_rate_labels)
+
+plt.tight_layout()
+plt.show()
+
+
+# price boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
+ax.set_yticklabels([])
+plt.title("Distribution of Rental Prices")
+plt.xlabel('Price ($)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+
+
+# review score boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
+ax.set_yticklabels([])
+plt.title("Distribution of Review Scores")
+plt.xlabel('Review Scores (Out of 5)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+
+
+# barplot of mean price per ward
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
+plt.title("Mean Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Mean Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+
+# barplot of median price per ward
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
+plt.title("Median Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Median Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+
 
 # %%
 ##### Initiate Train-Test Split #####
 
-x = listings.drop(columns=['review_scores_rating'])
-y = listings['review_scores_rating']
+x = listings.drop(columns=['review_scores_rating','Target'])
+y = listings['Target']
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state=1)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state=42)
 
 #%%
-##### Linear Regression Modeling #####
-lr = linear_model.LinearRegression()
-lr.fit(x_train,y_train)
+models = {'Decision Tree':DecisionTreeClassifier(random_state=1), 'Naive Bayes':GaussianNB(),
+          'Support Vector':SVC(kernel='rbf'), 'Linear SVC':LinearSVC(), 'Nu-Support Vector':NuSVC(), 
+          'KNN':KNeighborsClassifier(), 'Nearest Centroid':NearestCentroid(), 
+          'Gradient Booster':GradientBoostingClassifier(), 
+          'AdaBoost':AdaBoostClassifier(), 'XGBoost':xgb.XGBClassifier(),
+          'Random Forest': RandomForestClassifier(n_estimators = 500)
+          }
 
-lr_pred = lr.predict(x_test)
+for name, model in models.items():
+    
+        model.fit(x_train, y_train)
+        y_pred = model.predict(x_test)
+        
+        cf_matrix = confusion_matrix(y_test, y_pred)
+        matrix_plot = ConfusionMatrixDisplay(cf_matrix)
+        matrix_plot.plot()
+        plt.suptitle(f'Confusion Matrix for {name}',y=1.05)
+        plt.title('Class 0: Below Average \n Class 1: Above Average')
+        # feature_importances = pd.DataFrame(model.feature_importances_, columns=['important_features'])
+        # feature_importances.index = x.columns
+        # plt.figure(figsize=(10, 6))
+        # sns.barplot(data=feature_importances, x='important_features', y=feature_importances.index)
+        # plt.title('Variable Importance')
+        # plt.xlabel('Relative Importance')
+        # plt.ylabel('Features')
+        # plt.show()
 
-#%% 
-##### Linear Regression Results #####
-print('score (train):', lr.score(x_train, y_train)) # 0.09114998482404135
-print('score (test):', lr.score(x_test, y_test)) # 0.1162324514551959
-print('mse:', mse(y_test, lr_pred)) # 0.24738774363253802
+def specificity1(y_test,y_pred):
+    """The following function creates a scorer for the Specificity (True Negative) value. 
+    The Specificity value is a measure of our model correctly identifying True Negatives, 
+    and summarizes how well the negative class was predicted.""" 
+    
+    tn, fp, fn, tp = confusion_matrix(y_test,y_pred).ravel()
+    
+    if (tn+fp) == 0 or tn == 0:
+        true_negative_rate = 0
+    else:
+        true_negative_rate = tn/(tn+fp)
+    
+    return true_negative_rate
 
-print('intercept:', lr.intercept_) # 3.855591141659322
-print('coef_:', lr.coef_) #  [ 3.99668666e-02  2.12411527e-01 -7.54931302e-02  1.98270851e-01
-#  -5.71772736e-04 -3.07778830e-03 -1.02980734e-02 -3.97807499e-02
-#   4.45516380e-05  8.66330386e-02  2.26644948e-02 -8.82924725e-02
-#   1.13364695e-01  1.69814513e-02  1.93109785e-02  2.20418371e-02
-#   4.92525354e-01  2.01159971e-02  5.53017450e-02 -1.25762403e-02
-#  -1.77825096e-03 -4.51056614e-02]
+def neg_predictive_value1(y_test,y_pred):
+    """The following function creates a scorer for the Negative Predictive value. 
+    The negative predictive value is a measure of how well a model makes negative predicictions. 
+    When our model predicts that a student will not be retained, 
+    the negative predictive value provides the percentage of time our model makes a correct prediction.""" 
+
+    tn, fp, fn, tp = confusion_matrix(y_test,y_pred).ravel()
+    
+    if (tn+fn) == 0 or tn == 0:
+        neg_predictive_val = 0
+    else:
+        neg_predictive_val = tn/(tn+fn)
+    
+    return neg_predictive_val
+
+def cross_validation_scores(model, cv_method, metrics, xm, ym):
+    from sklearn.model_selection import cross_validate
+    x_train, x_test, y_train, y_test = train_test_split(xm, ym, test_size=0.2, random_state=1)
+    model.fit(x_train, y_train)
+    cv_results = cross_validate(model, x_test, y_test, scoring=metrics, cv=cv_method)
+    
+    calculated_metrics = {}
+    for name in metrics.keys():
+        calculated_metrics[name] = cv_results[f'test_{name}']
+    
+    names = []
+    mins = []
+    means = []
+    meds = []
+    maxes = []
+    stdvs = []
+
+    for key, value in calculated_metrics.items():
+        names.append(key)
+        mins.append(value.min())
+        means.append(value.mean())
+        meds.append(np.median(value))
+        maxes.append(value.max())
+        stdvs.append(value.std())
+        
+    cv_df = pd.DataFrame({'Metric':names, 'Min':mins, 'Mean':means, 'Median':meds, 'Max':maxes, 'Stdv':stdvs})
+    return cv_df
+
+#%%
+
+metrics = {'balanced_accuracy':make_scorer(balanced_accuracy_score), 'f1_score':make_scorer(f1_score), 'precision':make_scorer(precision_score), 'recall':make_scorer(recall_score), 'npv':make_scorer(neg_predictive_value1), 'tnr':make_scorer(specificity1)}
+
+dt_results = cross_validation_scores(model=models['Decision Tree'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+rf_results = cross_validation_scores(model=models['Random Forest'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+svc_results = cross_validation_scores(model=models['Support Vector'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nb_results = cross_validation_scores(model=models['Naive Bayes'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+linsvc_results = cross_validation_scores(model=models['Linear SVC'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nusupp_results = cross_validation_scores(model=models['Nu-Support Vector'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+knn_results = cross_validation_scores(model=models['KNN'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nrcctd_results = cross_validation_scores(model=models['Nearest Centroid'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+gbc_results = cross_validation_scores(model=models['Gradient Booster'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+ada_results = cross_validation_scores(model=models['AdaBoost'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+xgb_results = cross_validation_scores(model=models['XGBoost'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+
 
 # %%
-##### Linear Regression Cross Validation Results #####
-full_cv = linear_model.LinearRegression()
-cv_results_lr = cross_val_score(full_cv, x, y, cv=5)
-print(cv_results_lr) # [0.08999757 0.08584486 0.05371462 0.12635787 0.04745443]
+#FEATURE IMPORTANCE FOR BEST MODEL
 
-print(np.mean(cv_results_lr)) # 0.080673870945533
+feat_imp = permutation_importance(models['Gradient Booster'], x, y)
 
-    
+# Create a DataFrame with the feature importances
+dfimp = pd.DataFrame(feat_imp.importances_mean, columns=['important_features'])
+dfimp.index = x.columns
 
-#%%
-##### Random Forest Modeling #####
+# Plot the feature importances
+plt.figure(figsize=(16, 8))
+sns.barplot(data=dfimp, x='important_features', y=dfimp.index)
+plt.title('Feature Importance')
+plt.xlabel('Relative Importance')
+plt.ylabel('Features')
+
+plt.show()
+# %%
