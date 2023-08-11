@@ -532,7 +532,7 @@ plt.ylabel('Count of Reviews')
 ax.bar_label(bars)
 
 
-# host behavior rates boxplots
+# Host Behavior Rates Box Plots
 host_rates = ['host_response_rate', 'host_acceptance_rate']
 host_rate_labels = ['Response', 'Acceptance']
 
@@ -547,9 +547,9 @@ ax.set_xticklabels(host_rate_labels)
 
 plt.tight_layout()
 plt.show()
+# These two boxplots show the distributions of host response and acceptance rates. Both distributions are left-skewed. Most hosts are very response and accept the majority of prospective customers. 
 
-
-# price boxplot
+# Rental Price Box Plot
 plt.figure(figsize=(10, 6))
 ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
 ax.set_yticklabels([])
@@ -558,20 +558,9 @@ plt.xlabel('Price ($)')
 plt.ylabel(' ')
 plt.tight_layout()
 plt.show()
+# Rental price is one of the listing characteristics most valued by AirBnB customers. This boxplot shows the distribution of AirBnB rental prices. The distribution is right-skewed, meaning that there are a few exceptionally expensive rentals available. However, most rentals are clusterd together around a lower price point.
 
-
-# review score boxplot
-plt.figure(figsize=(10, 6))
-ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
-ax.set_yticklabels([])
-plt.title("Distribution of Review Scores")
-plt.xlabel('Review Scores (Out of 5)')
-plt.ylabel(' ')
-plt.tight_layout()
-plt.show()
-
-
-# barplot of mean price per ward
+# Mean Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
 plt.title("Mean Rental Price per Ward")
@@ -580,8 +569,9 @@ plt.ylabel("Mean Price ($)")
 plt.xticks()
 plt.tight_layout()
 plt.show()
+# Digging deeper into the price data, we find the mean rental price per ward. Ward 2 is noticeably more expensive than other wards. 
 
-# barplot of median price per ward
+# Median Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
 plt.title("Median Rental Price per Ward")
@@ -590,18 +580,28 @@ plt.ylabel("Median Price ($)")
 plt.xticks()
 plt.tight_layout()
 plt.show()
+# When the median rental prices of each ward are compared with one another, we see that Ward 2 is no longer much more expensive than the other wards. This suggests that there are a few abnormally expensive properties available for rent in Ward 2 (which skew the distribution right and drag the mean up). This is similar to what we observed in the distribution displayed in the general rental price boxplot. 
 
+# Review Scores Box Plot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
+ax.set_yticklabels([])
+plt.title("Distribution of Review Scores")
+plt.xlabel('Review Scores (Out of 5)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+# This box plot depicts the distribution of review scores. The distribution is left-skewed with the majority of scores in the 4.7 - 4.9 range. This posed a challenge for us, considering that our initial plan had been to use multiple linear regression to model which variables most determined a listings' review scores. However, as the above distribution shows, there is very little variation in the target variable (review score). Therefore, this isn't a suitable problem for multiple linear regression. Instead, we decided to treat our subsequent analysis as a classification problem. More specifically, we investigated whether it's possible to predict whether a listing will have an above average or a below average review score based on characteristics of the listing and the host's behavior. 
 
 #%%
-# Henry's EDA using df dataframe
-# Boxplots
+# Basic EDA
 print('df data frame:')
 print(df.info())
 
 print('listings  data frame:')
 print(listings.info())
 
-# host behavior rates boxplots
+### Host Behavior Rates Boxplots
 host_rates = ['host_response_rate', 'host_acceptance_rate']
 host_rate_labels = ['Response', 'Acceptance']
 
@@ -617,8 +617,7 @@ ax.set_xticklabels(host_rate_labels)
 plt.tight_layout()
 plt.show()
 
-
-# price boxplot
+### Price Boxplot
 plt.figure(figsize=(10, 6))
 ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
 ax.set_yticklabels([])
@@ -628,19 +627,7 @@ plt.ylabel(' ')
 plt.tight_layout()
 plt.show()
 
-
-# review score boxplot
-plt.figure(figsize=(10, 6))
-ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
-ax.set_yticklabels([])
-plt.title("Distribution of Review Scores")
-plt.xlabel('Review Scores (Out of 5)')
-plt.ylabel(' ')
-plt.tight_layout()
-plt.show()
-
-
-# barplot of mean price per ward
+# Mean Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
 plt.title("Mean Rental Price per Ward")
@@ -650,7 +637,7 @@ plt.xticks()
 plt.tight_layout()
 plt.show()
 
-# barplot of median price per ward
+# Median Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
 plt.title("Median Rental Price per Ward")
@@ -660,6 +647,15 @@ plt.xticks()
 plt.tight_layout()
 plt.show()
 
+# Review Score Boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
+ax.set_yticklabels([])
+plt.title("Distribution of Review Scores")
+plt.xlabel('Review Scores (Out of 5)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
 
 # %%
 ##### Initiate Train-Test Split #####
