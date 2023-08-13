@@ -465,6 +465,7 @@ host_property_count_df = host_property_count_df.sort_values(by='property_count',
 ranges = [1,2,5,10,15,20,25,50,100,200,float('inf')] 
 range_labels = [' Upto 2 Properties',' Upto 5 Properties',' Upto 10 Properties',' Upto 15 Properties', 'Upto 20 Properties', 'Upto 25 Properties','Upto 50 Properties', 'Upto 100 Properties', 'Upto 200 Properties', 'More than 200 Properties']
 host_property_count_df['property_count_range'] = pd.cut(host_property_count_df['property_count'], bins=ranges, labels=range_labels, right=False)
+
 # Group the data by property count range and count the number of hosts in each range
 grouped_counts = host_property_count_df.groupby('property_count_range')['host_id'].count()
 
@@ -556,7 +557,7 @@ plt.ylabel('Count of Reviews')
 ax.bar_label(bars)
 
 
-# Host Behavior Rates Box Plots
+## Host Behavior Rates Box Plots
 host_rates = ['host_response_rate', 'host_acceptance_rate']
 host_rate_labels = ['Response', 'Acceptance']
 
@@ -571,9 +572,9 @@ ax.set_xticklabels(host_rate_labels)
 
 plt.tight_layout()
 plt.show()
-# These two boxplots show the distributions of host response and acceptance rates. Both distributions are left-skewed. Most hosts are very response and accept the majority of prospective customers. 
+# These two boxplots show the distributions of host response and acceptance rates. The types of host behaviors are indicated on the x-axis and the response rate is indicated on the y-axis. Both distributions are left-skewed. Most hosts are very response and accept the majority of prospective customers. Boxplots are ideal for concisely illustrating the distributions of variables.
 
-# Rental Price Box Plot
+## Rental Price Box Plot
 plt.figure(figsize=(10, 6))
 ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
 ax.set_yticklabels([])
@@ -582,9 +583,9 @@ plt.xlabel('Price ($)')
 plt.ylabel(' ')
 plt.tight_layout()
 plt.show()
-# Rental price is one of the listing characteristics most valued by AirBnB customers. This boxplot shows the distribution of AirBnB rental prices. The distribution is right-skewed, meaning that there are a few exceptionally expensive rentals available. However, most rentals are clusterd together around a lower price point.
+# Rental price is one of the listing characteristics most valued by AirBnB customers. This boxplot shows the distribution of AirBnB rental prices in DC with price (in dollars) on the x-axis. The distribution is right-skewed, meaning that there are a few exceptionally expensive rentals available. However, most rentals are clusterd together around a lower price point.
 
-# Mean Price per Ward Bar Plot
+## Mean Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
 plt.title("Mean Rental Price per Ward")
@@ -593,9 +594,9 @@ plt.ylabel("Mean Price ($)")
 plt.xticks()
 plt.tight_layout()
 plt.show()
-# Digging deeper into the price data, we find the mean rental price per ward. Ward 2 is noticeably more expensive than other wards. 
+# Digging deeper into the price data, we generate a bar plot showing the mean rental price per ward with mean rental price in dollars on the y-axis and ward number on the x-axis. Ward 2 is noticeably more expensive than other wards.
 
-# Median Price per Ward Bar Plot
+## Median Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
 plt.title("Median Rental Price per Ward")
@@ -604,9 +605,9 @@ plt.ylabel("Median Price ($)")
 plt.xticks()
 plt.tight_layout()
 plt.show()
-# When the median rental prices of each ward are compared with one another, we see that Ward 2 is no longer much more expensive than the other wards. This suggests that there are a few abnormally expensive properties available for rent in Ward 2 (which skew the distribution right and drag the mean up). This is similar to what we observed in the distribution displayed in the general rental price boxplot. 
+# When the median rental prices of each ward are compared with one another via a similar bar plot, we see that Ward 2 is no longer significantly more expensive than the other wards. This suggests that there are a few abnormally expensive listings available for rent in Ward 2 (which skew the distribution right and drag the mean up). This is similar to what we observed in the distribution displayed in the general rental price box plot. 
 
-# Review Scores Box Plot
+## Review Scores Box Plot
 plt.figure(figsize=(10, 6))
 ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
 ax.set_yticklabels([])
@@ -615,7 +616,7 @@ plt.xlabel('Review Scores (Out of 5)')
 plt.ylabel(' ')
 plt.tight_layout()
 plt.show()
-# This box plot depicts the distribution of review scores. The distribution is left-skewed with the majority of scores in the 4.7 - 4.9 range. This posed a challenge for us, considering that our initial plan had been to use multiple linear regression to model which variables most determined a listings' review scores. However, as the above distribution shows, there is very little variation in the target variable (review score). Therefore, this isn't a suitable problem for multiple linear regression. Instead, we decided to treat our subsequent analysis as a classification problem. More specifically, we investigated whether it's possible to predict whether a listing will have an above average or a below average review score based on characteristics of the listing and the host's behavior. 
+# This box plot depicts the distribution of review scores with review score (out of 5) on the x-axis. The distribution is left-skewed with the majority of scores in the 4.7 - 4.9 range. This posed a challenge for us, considering that our initial plan had been to use multiple linear regression to model which variables most determined a listings' review scores. However, as the above distribution shows, there is very little variation in the target variable (review score). Therefore, this isn't a suitable problem for multiple linear regression. Instead, we decided to treat our subsequent analysis as a classification problem. More specifically, we investigated whether it's possible to predict whether a listing will have an above average or a below average review score based on characteristics of the listing and the host's behavior. 
 
 #%%
 
