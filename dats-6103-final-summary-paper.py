@@ -525,7 +525,7 @@ plt.tight_layout()
 #plt.ylim(top = 100)
 plt.show()
 
-#%% [markdown]------------------------------------------------------------
+#%% [markdown]
 #There are times when customers want to book an Airbnb but it is not favorable to them due to a singular unfavorable factor in the long list of factors.
 # The reason they decide to choose that airbnb that they could not book at the last minute was most likely because of its certain features that instantly got their attention, fit their price bracket and needs.
 # One thing that can be done in this case as a product developer is to know how many bunch of properties exists that all come under a single host. it will allow us to take that information and utilize it to find 
@@ -544,7 +544,7 @@ plt.tight_layout()
 plt.ylim(top = 100)
 plt.show()
 
-#%% [markdown]------------------------------------------------------------
+#%% [markdown]
 # As visible from above plot, The hosts with atleast 2 properties dominate the airbnb market meaning there are majority number of hosts that own 2 properties or even 5 properties at best. 
 #and the graph seems to be uneven for displaying number of properties owned by hosts that own higher number of properties as an individual. so in the second graph here, 
 # we have tried to shrink down the scale to give a better visualization for the hosts that own larger amounts of properties by count.
@@ -647,7 +647,7 @@ plt.ylabel('Count of Reviews')
 
 ax.bar_label(bars)
 
-
+#%%
 ## Host Behavior Rates Box Plots
 host_rates = ['host_response_rate', 'host_acceptance_rate']
 host_rate_labels = ['Response', 'Acceptance']
@@ -663,8 +663,10 @@ ax.set_xticklabels(host_rate_labels)
 
 plt.tight_layout()
 plt.show()
+#%% [markdown]
 # These two box plots show the distributions of host response and acceptance rates. The types of host behavior are indicated on the x-axis and the response rate is indicated on the y-axis. Both distributions are left-skewed. Most hosts are very response and accept the majority of prospective customers. Box plots are ideal for concisely illustrating the distributions of variables such as these.
 
+#%%
 ## Rental Price Box Plot
 plt.figure(figsize=(10, 6))
 ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
@@ -674,8 +676,10 @@ plt.xlabel('Price ($)')
 plt.ylabel(' ')
 plt.tight_layout()
 plt.show()
+#%%[markdown]
 # Rental price is one of the listing characteristics most valued by AirBnB customers. This box plot shows the distribution of AirBnB rental prices in DC with price (in dollars) on the x-axis. The distribution is right-skewed, meaning that there are a few exceptionally expensive rentals available. However, most rentals are clusterd together around a lower price point.
 
+#%%
 ## Mean Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
@@ -685,8 +689,10 @@ plt.ylabel("Mean Price ($)")
 plt.xticks()
 plt.tight_layout()
 plt.show()
+#%%[markdown]
 # Digging deeper into the price data, we generate a bar plot showing the mean rental price per ward with mean rental price (in dollars) on the y-axis and ward number on the x-axis. Ward 2 is noticeably more expensive than other wards. Mean rental price seems to be somewhat effected by location. 
 
+#%%
 ## Median Price per Ward Bar Plot
 plt.figure(figsize=(12, 6))
 sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
@@ -696,8 +702,10 @@ plt.ylabel("Median Price ($)")
 plt.xticks()
 plt.tight_layout()
 plt.show()
+#%%[markdown]
 # When the median rental prices of each ward are compared with one another via a similar bar plot (this time for median instead of mean), we see that Ward 2 is no longer significantly more expensive than the other wards. This suggests that there are a few abnormally expensive listings available for rent in Ward 2 (which skew the distribution right and drag the mean up). This is similar to what we observed in the distribution displayed in the general rental price box plot. It seems that median rental price is less effected by location than mean rental price.
 
+#%%
 ## Review Scores Box Plot
 plt.figure(figsize=(10, 6))
 ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
@@ -707,6 +715,7 @@ plt.xlabel('Review Scores (Out of 5)')
 plt.ylabel(' ')
 plt.tight_layout()
 plt.show()
+#%%[markdown]
 # This box plot depicts the distribution of review scores with review score (out of 5) on the x-axis. The distribution is left-skewed with the majority of scores in the 4.7 - 4.9 range. This posed a challenge for us, considering that our initial plan had been to use multiple linear regression to model which variables most determined listings' review scores. However, as the above distribution shows, there is very little variation in the target variable (review score). Therefore, this isn't a suitable problem for multiple linear regression. Instead, we decided to treat our subsequent analysis as a classification problem. More specifically, we investigated whether it's possible to predict whether a listing will have an above average or a below average review score based on characteristics of the listing and the host's behavior. 
 
 #%% [markdown]
@@ -858,15 +867,7 @@ print(f'XG Boost accuracy metrics\n{xgb_results}\n')
 # 3. Gradient Boosting Classifier
 #
 # The reason why these three models are chosen is based on the findings avaiable in the confusion matrix and the cross validation table generated above where we find these models to be relatively better 
-# amongst the 12 models we originally began with. The reasoning for each of these 3 models being better than the rest along with the interpretation of their metrics is shown below - 
-#
-#Decision tree Classifier
-#
-# Content here
-#
-#Naive Bayes Classifier
-#
-# Content here
+# amongst the 12 models we originally began with. Even amongst those three models, we have chosen Gradient Boosting Classifier as the overall best representative model and the reasoning for that model being better than the rest along with the interpretation of it's metrics is shown below - 
 #
 #Gradient Boosting Classifier
 #
@@ -931,7 +932,7 @@ plt.show()
 #
 #
 #
-## 6. References - 
+## 6. References 
 #
 # 1. Evan Lutins, (2017). Ensemble Methods in Machine Learning: What are They and Why Use Them?
 # https://towardsdatascience.com/ensemble-methods-in-machine-learning-what-are-they-and-why-use-them-68ec3f9fef5f 
