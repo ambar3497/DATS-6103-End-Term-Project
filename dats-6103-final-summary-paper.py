@@ -77,6 +77,9 @@ from sklearn.inspection import permutation_importance
 
 #%% [markdown]
 ## 2. Data Preprocessing and Data Engineering 
+# The data prepocessing and data engineering was divided into several parts. The first part was to identify duplicate values. The second part was to identify null values. The third part was to convert all data types so that they were numeric data types. 
+#
+# The data engineering phase included transforming the "Amenities" and the "Neighbourhood" features. The transformation of these variables resulting in the creation of over 10 new features. 
 #%%
 data = pd.read_csv('DC-AirBnB-Listings.csv')
 print(data.columns,'\n')
@@ -88,14 +91,21 @@ data.head()
 ##### Subset the DataFrame to get the Features #####
 df = data[['host_since', 'host_response_time', 'host_response_rate', 'host_acceptance_rate', 'host_is_superhost', 'neighbourhood_cleansed', 'neighbourhood', 'neighbourhood_group_cleansed', 'property_type', 'room_type', 'accommodates', 'bathrooms', 'bedrooms', 'beds', 'price', 'instant_bookable', 'review_scores_rating', 'latitude', 'longitude', 'amenities']]
 
-#%% 
-##### Check for Duplicates #####
+#%% [markdown]
+### Check for Duplicates
+# In order to check for duplicates, the total number of duplicates in the entire dataframe were checked. It was revealed that 72 duplicate rows were in the dataframe. Since the dataframe already contained a sufficient number of rows to meet the project requirements, the duplicate rows were dropped. Only the last or "most recent" duplicate instance was kept. 
+
+#%%
 print(df.duplicated().sum(),'\n')
 df[df.duplicated()]
 
 df.drop_duplicates(keep='last', inplace=True)
 
-#%% 
+#%% [markdown]
+### Check for Null Values
+# Similarly for duplicates, the entire number of null values were calculated in the dataframe. However, the number of null values were calculated by column. The "Bathrooms", "Neighbourhood Group Cleansed", and "Neighbourhood" variables were all empty, so they were dropped from the dataframe. Furthermore, rows which had a null value for the target variable "Review_Scores_Rating" were dropped. 
+
+#%%
 ##### Check for NAs #####
 print(df.isna().sum(),'\n')
 df.drop(columns=['bathrooms', 'neighbourhood_group_cleansed', 'neighbourhood'], inplace=True) # Drop columns with all NA values
@@ -114,7 +124,13 @@ def get_value_counts(df, column):
 for column in nas:
     get_value_counts(df, column)
 
-#%% 
+#%% [markdown]
+#### Imputation of Null Values
+# There were several columns that weren't completely null, but still had null values. In order to avoid dropping more columns, their null values were imputated. This required several steps. First, all variables were converted to numeric data types, either integers or floats. Some variables had to be coded, such as the "Host_Response_Time", while others had to be transformed to remove unnecessary characters, such as the "Host_Acceptance_Rate". 
+#
+# After the variables were transformed to numeric variables, a function was defined to calculate their mean values and replace their null values with their mean. This function was applied to the following columns: Host Response Time, Host Response Rate, Host Acceptance Rate, Host is Superhost, Bedrooms, and Beds. 
+
+#%%
 ##### Part 1: Imputation for Columns with NAs #####
 # First we will convert the columns to numeric variables 
 # Host Response Time: Categorical
@@ -158,7 +174,12 @@ impute_mean(df, 'host_acceptance_rate')
 impute_mean(df, 'host_is_superhost')
 impute_mean(df, 'bedrooms')
 impute_mean(df, 'beds')
-#%% 
+#%% [markdown]
+### Feature Engineering
+#### Transformation of the Amenities Variable
+# Each cell in the Amentities column contained a list of amenities that belong to a listing. There were over 2,000 unique amenities listed in the file. Given the large number of amenities, amenity groups were developed and added a new variables. The amenities were sorted into the following categories: Streaming, Outdoor, Views, Entertainment, Kitchen Appliances, Other Appliances, Technology, Luxury, Security, Parking, and Gym.
+
+#%%
 ##### Part 1: Feature Engineering for Amenities Variable #####
 # First we will create a list of all amenities and get the number of unique amenities
 
@@ -320,7 +341,9 @@ axes[4,1].set_title('Technology Variable')
 axes[5,0].bar(df.groupby(by='Views', as_index=False)['price'].count()['Views'], df.groupby(by='Views', as_index=False)['price'].count()['price'])
 axes[5,0].set_title('Views Variable')
 
-
+#%% [markdown]
+#### Transformation of the Neighborhood Cleansed Variable
+# Similar to the Amenities variable, each cell in the Neighbourhood column contained a list of neighbourhoods that a listing belonged to. There were over 120 unique neighbourhoods listed in the file. Instead of adding 120 new variables to the dataframe, each listing of the dataframe was sorted into one of DC's eight wards. 
 #%%  
 ##### Part 1: Feature Engineering for Neighbourhood Variable #####
 # First we will create a list of all neighbourhoods and get the number of unique neighbourhoods
@@ -422,6 +445,9 @@ for idx in df.index:
             
 df['Ward'] = ward
 
+#%% [markdown]
+### Final DataFrame
+# Additional data processing included converting the Room Type variable to an ordinal numeric variable, converting Instant Bookable to a boolean integer, and converting price to a float. The final dataframe contained a total of 5,180 rows. 
 #%% 
 ##### Convert Room Type to Ordinal Variable #####
 
@@ -445,8 +471,7 @@ df['price'] = prices
 
 #%%
 ##### Finalizing DataFrames #####
-# The df dataframe can be used for EDA
-# The listings dataframe is processed for modeling 
+
 
 listings = df[['host_response_time', 'host_response_rate',
        'host_acceptance_rate', 'host_is_superhost', 'accommodates', 'bedrooms', 'beds', 'instant_bookable', 'price', 'Clothing', 'Entertainment', 'Exercise',
@@ -684,6 +709,15 @@ plt.tight_layout()
 plt.show()
 # This box plot depicts the distribution of review scores with review score (out of 5) on the x-axis. The distribution is left-skewed with the majority of scores in the 4.7 - 4.9 range. This posed a challenge for us, considering that our initial plan had been to use multiple linear regression to model which variables most determined listings' review scores. However, as the above distribution shows, there is very little variation in the target variable (review score). Therefore, this isn't a suitable problem for multiple linear regression. Instead, we decided to treat our subsequent analysis as a classification problem. More specifically, we investigated whether it's possible to predict whether a listing will have an above average or a below average review score based on characteristics of the listing and the host's behavior. 
 
+#%% [markdown]
+## 4. Modeling and Variable Importance Plot
+# As mentioned previously, the initial project was approached as a regression project. Using regression models such as Linear Regression and Decision Tree Regressor, we wanted to predict a listing's review score. However, the review scores rating variable had very little variation, with a standard deviation of 0.50. 
+#
+# When attempting to predict review scores rating with regression models such as Linear Regression and Decision Tree Regressor, the models revealed very low r2 scores and high MSE scores. 
+#
+# To remedy this, the review scores rating variable was changed to a binary target. The classes are 1: rating is above the average rating and 2: rating is below the average rating. There was a slight imbalance between the two classes, but not enough to make classification modeling impossible. 
+#
+# For the model selection phase, several models were tested, including K-Nearest Neighbors, Gradient Boost, XGBoost, Linear SVC, and ADA Boost. Out of all models tested, the Decision Tree, Gradient Boost, and Naive Bayes models performed the best. All models were cross-validated to further assess their performance. 
 
 #%%
 ##### Initiate Train-Test Split #####
