@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 import ast
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from sklearn import linear_model
+from sklearn.linear_model import LogisticRegression 
 from sklearn.tree import DecisionTreeRegressor
 
 from sklearn.model_selection import train_test_split
@@ -14,18 +16,25 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_validate
 
+from sklearn.inspection import permutation_importance
+
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import make_scorer
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error as mse
-from sklearn.metrics import f1_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import precision_score
 from sklearn.metrics import ConfusionMatrixDisplay
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    classification_report
+)
 
 import xgboost as xgb
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import LinearSVC
@@ -37,6 +46,7 @@ from sklearn.naive_bayes import GaussianNB
 
 #%% [markdown]
 # Load the Data and View Summary of Data Types and Columns
+
 data = pd.read_csv('DC-AirBnB-Listings.csv')
 print(data.columns)
 print(f'The file has {data.shape[0]} rows and {data.shape[1]} features.')
@@ -427,7 +437,6 @@ listings = df[['host_response_time', 'host_response_rate',
        'Kitchen', 'Luxury', 'Outdoor', 'Parking', 'Security', 'Streaming',
        'Technology', 'Views', 'Ward', 'Privacy', 'review_scores_rating']]
 
-
 # %% [markdown]
 # Review Scores Rating Discretization
 ####### The review scores rating variable had very little variation. Its standard deviation was 0.50. The lack of variation made it more difficult to predict review score ratings. Furthermore, the current variables in the listings file did not seem to be good predictors for the ratings, as they had very small coefficients and the r2 score was low.
@@ -578,4 +587,374 @@ dt_results
 
 nb_results = cross_validation_scores(model=nb, cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
 nb_results
+
+# %%
+#Exploratory Data Analysis
+
+#barplot for hosts with more than 1 property
+
+
+host_property_count = data['host_id'].value_counts()
+host_property_count_df = pd.DataFrame({'host_id': host_property_count.index, 'property_count': host_property_count.values})
+host_property_count_df = host_property_count_df.sort_values(by='property_count', ascending=False)
+
+#range and range labels
+ranges = [1,2,5,10,15,20,25,50,100,200,float('inf')] 
+range_labels = [' Upto 2 Properties',' Upto 5 Properties',' Upto 10 Properties',' Upto 15 Properties', 'Upto 20 Properties', 'Upto 25 Properties','Upto 50 Properties', 'Upto 100 Properties', 'Upto 200 Properties', 'More than 200 Properties']
+host_property_count_df['property_count_range'] = pd.cut(host_property_count_df['property_count'], bins=ranges, labels=range_labels, right=False)
+# Group the data by property count range and count the number of hosts in each range
+grouped_counts = host_property_count_df.groupby('property_count_range')['host_id'].count()
+
+
+plt.figure(figsize=(10, 6))
+grouped_counts.plot(kind='bar')
+plt.xlabel('Host Groups')
+plt.ylabel('Number of Properties')
+plt.title('Number of Properties Listed by Host')
+plt.xticks(rotation=40)  # To avoid overlap of host IDs on x-axis
+plt.tight_layout()
+#plt.ylim(top = 100)
+plt.show()
+
+
+plt.figure(figsize=(10, 6))
+grouped_counts.plot(kind='bar')
+plt.xlabel('Host Groups')
+plt.ylabel('Number of Properties')
+plt.title('Number of Properties Listed by Host')
+plt.xticks(rotation=40)  # To avoid overlap of host IDs on x-axis
+plt.tight_layout()
+plt.ylim(top = 100)
+plt.show()
+
+base_keywords=['Camper/RV','Casa Particular', 'Entire','Floor','Room','Shared room','Private room','Tiny home','Tower']
+
+keyword_counts = {keyword: 0 for keyword in base_keywords}
+
+for keyword in base_keywords:
+    propcount = data[data['property_type'].str.contains(keyword,case=False,na=False)].shape[0]
+    keyword_counts[keyword] = propcount
+
+plt.figure(figsize=(10, 6))
+plt.bar(keyword_counts.keys(),keyword_counts.values())
+plt.xlabel('Property Type')
+plt.ylabel('Count of Properties')
+plt.title('Count of Properties by Keyword')
+plt.xticks(rotation=40)  # To avoid overlap of host IDs on x-axis
+plt.tight_layout()
+plt.show()
+
+
+plt.figure(figsize=(16,8))
+ax= plt.axes()
+correlation_mat = listings.corr()
+sns.heatmap(correlation_mat,annot=True,cmap='coolwarm',ax=ax, fmt = '0.2f', annot_kws = {'size' : 10},vmin=-1,center=0,vmax=1)
+plt.title('Correlation Matrix', fontsize = 16)
+ax.set_xticklabels(ax.get_xticklabels(), rotation = 45, horizontalalignment = 'right')
+cbar = ax.collections[0].colorbar
+# cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
+# cbar.set_ticklabels(['-1', '-0.5', '0', '0.5', '1'])
+plt.tight_layout()
+plt.show()
+
+
+plt.figure(figsize=(16, 8))
+sns.scatterplot(x='latitude', y='longitude', hue='Ward', data=df, palette='Set1', alpha=0.7)
+plt.title('Airbnb Listings: Latitude vs Longitude with Region')
+plt.xlabel('Latitude')
+plt.ylabel('Longitude')
+plt.legend(title='Ward Numbers')
+plt.grid(True)
+plt.show()
+
+
+plt.figure(figsize=(16, 8))
+sns.scatterplot(x='latitude', y='longitude', hue='host_identity_verified', data=data, palette='Set2', alpha=0.7)
+plt.title('Latitude vs Longitude of an AirBnB with Host Identity')
+plt.xlabel('Latitude')
+plt.ylabel('Longitude')
+plt.legend(title='Verified Identity(True/False)')
+plt.grid(True)
+plt.show()
+
+##### Plot the New Discretized Review Scores Variable #####
+fig, ax = plt.subplots()
+bars = ax.bar(listings.groupby(by=['Target'], as_index=False)['review_scores_rating'].count()['Target'], listings.groupby(by=['Target'], as_index=False)['review_scores_rating'].count()['review_scores_rating'])
+
+plt.title('Distribution of Discretized Review Score Variable')
+plt.xlabel('Rating Above Average: 1 - Yes, 0 - No')
+plt.ylabel('Count of Reviews')
+
+ax.bar_label(bars)
+
+# Host Behavior Rates Box Plots
+host_rates = ['host_response_rate', 'host_acceptance_rate']
+host_rate_labels = ['Response', 'Acceptance']
+
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[host_rates])
+plt.xticks(rotation=0) 
+plt.title("Distributions of Host Behavior Rates")
+plt.xlabel('Type of Rate')
+plt.ylabel('Rate')
+
+ax.set_xticklabels(host_rate_labels)
+
+plt.tight_layout()
+plt.show()
+# These two boxplots show the distributions of host response and acceptance rates. Both distributions are left-skewed. Most hosts are very response and accept the majority of prospective customers. 
+
+# Rental Price Box Plot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
+ax.set_yticklabels([])
+plt.title("Distribution of Rental Prices")
+plt.xlabel('Price ($)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+# Rental price is one of the listing characteristics most valued by AirBnB customers. This boxplot shows the distribution of AirBnB rental prices. The distribution is right-skewed, meaning that there are a few exceptionally expensive rentals available. However, most rentals are clusterd together around a lower price point.
+
+# Mean Price per Ward Bar Plot
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
+plt.title("Mean Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Mean Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+# Digging deeper into the price data, we find the mean rental price per ward. Ward 2 is noticeably more expensive than other wards. 
+
+# Median Price per Ward Bar Plot
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
+plt.title("Median Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Median Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+# When the median rental prices of each ward are compared with one another, we see that Ward 2 is no longer much more expensive than the other wards. This suggests that there are a few abnormally expensive properties available for rent in Ward 2 (which skew the distribution right and drag the mean up). This is similar to what we observed in the distribution displayed in the general rental price boxplot. 
+
+# Review Scores Box Plot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
+ax.set_yticklabels([])
+plt.title("Distribution of Review Scores")
+plt.xlabel('Review Scores (Out of 5)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+# This box plot depicts the distribution of review scores. The distribution is left-skewed with the majority of scores in the 4.7 - 4.9 range. This posed a challenge for us, considering that our initial plan had been to use multiple linear regression to model which variables most determined a listings' review scores. However, as the above distribution shows, there is very little variation in the target variable (review score). Therefore, this isn't a suitable problem for multiple linear regression. Instead, we decided to treat our subsequent analysis as a classification problem. More specifically, we investigated whether it's possible to predict whether a listing will have an above average or a below average review score based on characteristics of the listing and the host's behavior. 
+
+#%%
+# Basic EDA
+print('df data frame:')
+print(df.info())
+
+print('listings  data frame:')
+print(listings.info())
+
+### Host Behavior Rates Boxplots
+host_rates = ['host_response_rate', 'host_acceptance_rate']
+host_rate_labels = ['Response', 'Acceptance']
+
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[host_rates])
+plt.xticks(rotation=0) 
+plt.title("Distributions of Host Behavior Rates")
+plt.xlabel('Type of Rate')
+plt.ylabel('Rate')
+
+ax.set_xticklabels(host_rate_labels)
+
+plt.tight_layout()
+plt.show()
+
+### Price Boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['price']], orient='h', color='lightgreen')
+ax.set_yticklabels([])
+plt.title("Distribution of Rental Prices")
+plt.xlabel('Price ($)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+
+# Mean Price per Ward Bar Plot
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].mean().reset_index())
+plt.title("Mean Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Mean Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+
+# Median Price per Ward Bar Plot
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Ward', y='price', data=df.groupby('Ward')['price'].median().reset_index())
+plt.title("Median Rental Price per Ward")
+plt.xlabel("Ward Number")
+plt.ylabel("Median Price ($)")
+plt.xticks()
+plt.tight_layout()
+plt.show()
+
+# Review Score Boxplot
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(data=df[['review_scores_rating']], orient='h', color='yellow')  
+ax.set_yticklabels([])
+plt.title("Distribution of Review Scores")
+plt.xlabel('Review Scores (Out of 5)')
+plt.ylabel(' ')
+plt.tight_layout()
+plt.show()
+
+# %%
+##### Initiate Train-Test Split #####
+
+x = listings.drop(columns=['review_scores_rating','Target'])
+y = listings['Target']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state=42)
+
+#%%
+models = {'Logistic Regression':LogisticRegression(),'Decision Tree':DecisionTreeClassifier(random_state=1), 'Naive Bayes':GaussianNB(),
+          'Support Vector':SVC(kernel='rbf'), 'Linear SVC':LinearSVC(), 'Nu-Support Vector':NuSVC(), 
+          'KNN':KNeighborsClassifier(), 'Nearest Centroid':NearestCentroid(), 
+          'Gradient Booster':GradientBoostingClassifier(), 
+          'AdaBoost':AdaBoostClassifier(), 'XGBoost':xgb.XGBClassifier(),
+          'Random Forest': RandomForestClassifier(n_estimators = 500)
+          }
+
+#models = {'Gradient Booster':GradientBoostingClassifier()}
+
+for name, model in models.items():
+    
+        model.fit(x_train, y_train)
+        y_pred = model.predict(x_test)
+        vif = 1 / (1 - (r2_score(y_test, model.predict(x_test))))
+        cf_matrix = confusion_matrix(y_test, y_pred)
+        matrix_plot = ConfusionMatrixDisplay(cf_matrix)
+        matrix_plot.plot()
+        plt.suptitle(f'Confusion Matrix for {name}',y=1.05)
+        plt.title('Class 0: Below Average \n Class 1: Above Average')
+        print(f'VIF score for {name} is {vif}')
+        # feature_importances = pd.DataFrame(model.feature_importances_, columns=['important_features'])
+        # feature_importances.index = x.columns
+        # plt.figure(figsize=(10, 6))
+        # sns.barplot(data=feature_importances, x='important_features', y=feature_importances.index)
+        # plt.title('Variable Importance')
+        # plt.xlabel('Relative Importance')
+        # plt.ylabel('Features')
+        # plt.show()
+
+def specificity1(y_test,y_pred):
+    """The following function creates a scorer for the Specificity (True Negative) value. 
+    The Specificity value is a measure of our model correctly identifying True Negatives, 
+    and summarizes how well the negative class was predicted.""" 
+    
+    tn, fp, fn, tp = confusion_matrix(y_test,y_pred).ravel()
+    
+    if (tn+fp) == 0 or tn == 0:
+        true_negative_rate = 0
+    else:
+        true_negative_rate = tn/(tn+fp)
+    
+    return true_negative_rate
+
+def neg_predictive_value1(y_test,y_pred):
+    """The following function creates a scorer for the Negative Predictive value. 
+    The negative predictive value is a measure of how well a model makes negative predicictions. 
+    When our model predicts that a student will not be retained, 
+    the negative predictive value provides the percentage of time our model makes a correct prediction.""" 
+
+    tn, fp, fn, tp = confusion_matrix(y_test,y_pred).ravel()
+    
+    if (tn+fn) == 0 or tn == 0:
+        neg_predictive_val = 0
+    else:
+        neg_predictive_val = tn/(tn+fn)
+    
+    return neg_predictive_val
+
+def cross_validation_scores(model, cv_method, metrics, xm, ym):
+    from sklearn.model_selection import cross_validate
+    x_train, x_test, y_train, y_test = train_test_split(xm, ym, test_size=0.2, random_state=1)
+    model.fit(x_train, y_train)
+    cv_results = cross_validate(model, x_test, y_test, scoring=metrics, cv=cv_method)
+    
+    calculated_metrics = {}
+    for name in metrics.keys():
+        calculated_metrics[name] = cv_results[f'test_{name}']
+    
+    names = []
+    mins = []
+    means = []
+    meds = []
+    maxes = []
+    stdvs = []
+
+    for key, value in calculated_metrics.items():
+        names.append(key)
+        mins.append(value.min())
+        means.append(value.mean())
+        meds.append(np.median(value))
+        maxes.append(value.max())
+        stdvs.append(value.std())
+        
+    cv_df = pd.DataFrame({'Metric':names, 'Min':mins, 'Mean':means, 'Median':meds, 'Max':maxes, 'Stdv':stdvs})
+    return cv_df
+
+#%%
+
+metrics = {'balanced_accuracy':make_scorer(balanced_accuracy_score), 'f1_score':make_scorer(f1_score), 'precision':make_scorer(precision_score), 'recall':make_scorer(recall_score), 'npv':make_scorer(neg_predictive_value1), 'tnr':make_scorer(specificity1)}
+
+lgr_results = cross_validation_scores(model=models['Logistic Regression'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y) 
+dt_results = cross_validation_scores(model=models['Decision Tree'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+rf_results = cross_validation_scores(model=models['Random Forest'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+svc_results = cross_validation_scores(model=models['Support Vector'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nb_results = cross_validation_scores(model=models['Naive Bayes'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+linsvc_results = cross_validation_scores(model=models['Linear SVC'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nusupp_results = cross_validation_scores(model=models['Nu-Support Vector'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+knn_results = cross_validation_scores(model=models['KNN'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+nrcctd_results = cross_validation_scores(model=models['Nearest Centroid'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+gbc_results = cross_validation_scores(model=models['Gradient Booster'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+ada_results = cross_validation_scores(model=models['AdaBoost'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+xgb_results = cross_validation_scores(model=models['XGBoost'], cv_method=StratifiedKFold(n_splits=10), metrics=metrics, xm=x, ym=y)
+
+print(f'Logistic regession accuracy metrics\n{lgr_results}\n')
+print(f'Decision Tree accuracy metrics\n{dt_results}\n')
+print(f'Random Forest Classifier accuracy metrics\n{rf_results}\n')
+print(f'Support Vector Classifier accuracy metrics\n{svc_results}\n')
+print(f'Naive Bayes Classifier accuracy metrics\n{nb_results}\n')
+print(f'Linear SVC Classifier accuracy metrics\n{linsvc_results}\n')
+print(f'Nu Support Classifier accuracy metrics \n{nusupp_results}\n')
+print(f'K Nearest Neighbours accuracy metrics\n{knn_results}\n')
+print(f'Nearest Centroid accuracy metrics\n{nrcctd_results}\n')
+print(f'Gradient Boosting Classifier accuracy metrics\n{gbc_results}\n')
+print(f'ADA Classifier accuracy metrics\n{ada_results}\n')
+print(f'XG Boost accuracy metrics\n{xgb_results}\n')
+
+# %%
+#FEATURE IMPORTANCE FOR BEST MODEL
+
+feat_imp = permutation_importance(models['Gradient Booster'], x_train, y_train)
+
+# Create a DataFrame with the feature importances
+dfimp = pd.DataFrame(feat_imp.importances_mean, columns=['important_features'])
+dfimp.index = x_train.columns
+dfimp = dfimp.sort_values('important_features',ascending = False)
+
+# Plot the feature importances
+plt.figure(figsize=(12, 8))
+sns.barplot(data=dfimp, x='important_features', y=dfimp.index)
+plt.title('Feature Importance')
+plt.xlabel('Relative Importance')
+plt.ylabel('Features')
+
+plt.show()
+
 # %%
